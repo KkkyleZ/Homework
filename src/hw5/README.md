@@ -41,11 +41,11 @@ Submit your assignment to Canvas.
 Your _report.pdf_ and _answer.py_ files should be be submitted.
 
 
-For each question, you need to report your results in three aspects:
+For each question, you need to report your results in the following aspects:
 
 - How many trainable parameters are in the model? It is printed in the terminal.
 - What is the best training accuracy?
-- What is the best validation accuracy? Is it better than the ones in previous questions?
+- What is the best validation accuracy? Is it better than the best training accuracies?
 - According to the training and validation accuracies, does the model overfit your training data?
 
 
