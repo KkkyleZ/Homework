@@ -94,7 +94,11 @@ image make_1d_gaussian(float sigma)
 image smooth_image(image im, float sigma)
 {
     // TODO: use two convolutions with 1d gaussian filter.
-    return copy_image(im);
+    image filter = make_gaussian_filter(sigma);
+    image smoothed_img = convolve_image(im, filter, 1);
+    free_image(filter);
+    return smoothed_img;
+
 }
 
 // Calculate the structure matrix of an image.
@@ -103,9 +107,33 @@ image smooth_image(image im, float sigma)
 // returns: structure matrix. 1st channel is Ix^2, 2nd channel is Iy^2,
 //          third channel is IxIy.
 image structure_matrix(image im, float sigma)
-{
-    image S = make_image(im.w, im.h, 3);
+{   
     // TODO: calculate structure matrix for im.
+    // 1. You can use Sobel filter and associated functions from HW2 to calculate the derivatives.
+    image gx_filter = make_gx_filter();
+    image gy_filter = make_gy_filter();
+    image Ix = convolve_image(im, gx_filter,0);
+    image Iy = convolve_image(im, gy_filter,0);
+    free_image(gx_filter);
+    free_image(gy_filter);
+    // 2. The measures are element-wise multiplications. 
+    image S = make_image(im.w, im.h, 3);
+    int r,g,b;
+    r=0*im.w*im.h;                                             
+    g=1*im.w*im.h;
+    b=2*im.w*im.h;
+    for (int i = 0; i < im.w * im.h; i++) {  
+        S.data[i+r] = Ix.data[i] * Ix.data[i];
+        S.data[i+g] = Iy.data[i] * Iy.data[i];
+        S.data[i+b] = Ix.data[i] * Iy.data[i];
+    }
+    free_image(Ix);
+    free_image(Iy);
+    // 3. The weighted sum can be easily computed with a Gaussian blur as discussed in class. 
+    image filter = make_gaussian_filter(sigma);
+    S = convolve_image(S, filter, 1);
+    free_image(filter);
+
     return S;
 }
 
@@ -114,9 +142,22 @@ image structure_matrix(image im, float sigma)
 // returns: a response map of cornerness calculations.
 image cornerness_response(image S)
 {
-    image R = make_image(S.w, S.h, 1);
     // TODO: fill in R, "cornerness" for each pixel using the structure matrix.
     // We'll use formulation det(S) - alpha * trace(S)^2, alpha = .06.
+    image R = make_image(S.w, S.h, 1);
+    float alpha = 0.06;
+    image detS = make_image(S.w, S.h, 1);
+    image traceS2 = make_image(S.w, S.h, 1);
+
+    int xx,yy,xy;
+    xx=0*S.w*S.h;                                             
+    yy=1*S.w*S.h;
+    xy=2*S.w*S.h;
+    for(int i = 0; i < S.w * S.h; i++){     
+        detS.data[i] = S.data[i+xx] * S.data[i+yy] - pow(S.data[i+xy], 2);
+        traceS2.data[i] = alpha * pow(S.data[i+xx] + S.data[i+yy], 2);
+    }
+    R = sub_image(detS, traceS2);
     return R;
 }
 
@@ -132,6 +173,27 @@ image nms_image(image im, int w)
     //     for neighbors within w:
     //         if neighbor response greater than pixel response:
     //             set response to be very low (I use -999999 [why not 0??])
+    int row = 0;
+    while(row < im.h){
+        int col = 0;
+        while(col < im.w){
+            int cur_index = row * im.w + col;
+            int max_index = -1;
+            for(int i = -w; i < w+1; i++){
+                for(int j = -w; j < w+1; j++){
+                    int temp_index =  (row+i) * im.w + (col+j);
+                    if(temp_index < im.w*im.h)
+                        if(im.data[max_index] < im.data[temp_index])
+                            max_index = temp_index;
+                }
+            }
+            if(im.data[cur_index] < im.data[max_index])
+                r.data[cur_index] = -999999;
+            
+            col += 1;
+        }
+        row += 1;
+    }
     return r;
 }
 
@@ -153,16 +215,26 @@ descriptor *harris_corner_detector(image im, float sigma, float thresh, int nms,
     // Run NMS on the responses
     image Rnms = nms_image(R, nms);
 
-
     //TODO: count number of responses over threshold
-    int count = 1; // change this
-
-    
+    int count = 0; // change this
+    for(int i = 0; i < Rnms.w*Rnms.h; i ++){
+        if(Rnms.data[i] != -999999 && Rnms.data[i] > thresh){
+            count++;
+        }
+    }
+    // printf("count %d\n", count);
     *n = count; // <- set *n equal to number of corners in image.
     descriptor *d = calloc(count, sizeof(descriptor));
     //TODO: fill in array *d with descriptors of corners, use describe_index.
-
-
+    int num = 0;
+    for(int i = 0; i < Rnms.w*Rnms.h; i ++){
+        if(Rnms.data[i] != -999999 && num < count && Rnms.data[i] > thresh){
+            d[num] = describe_index(im, i);
+            num++;
+        }
+    }
+      
+    // printf("=========================\n");
     free_image(S);
     free_image(R);
     free_image(Rnms);
