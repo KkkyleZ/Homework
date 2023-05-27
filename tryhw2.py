@@ -46,3 +46,7 @@ save_image(mag, "magnitude")
 im = load_image("data/dog.jpg")
 color = colorize_sobel(im)
 save_image(color, "dog_color")
+
+im=load_image("data/landscape.jpg")
+median=apply_median_filter(im,3)
+save_image(median,"median")

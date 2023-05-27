@@ -39,7 +39,14 @@ class SimpleCNN(nn.Module):
 
         TODO: fill this forward function for data flow
         """
-        pass
+        x = self.conv_layer(x)
+        x = F.relu(x)
+        x = self.pool(x)
+
+        size = x.shape[0]
+        x = x.view(size, -1)
+        x = self.fc1(x)
+        return x
 
 
 # %%
@@ -51,7 +58,13 @@ Question 3
 TODO: Add color normalization to the transformer. For simplicity, let us use 0.5 for mean
       and 0.5 for standard deviation for each color channel.
 """
-norm_transformer = transforms.Compose([])
+norm_transformer = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize(
+        (0.5, 0.5, 0.5),
+        (0.5, 0.5, 0.5)
+    )
+])
 
 
 # %%
@@ -63,7 +76,23 @@ class DeepCNN(nn.Module):
 
         TODO: setup the structure of the network
         """
-        pass
+        self.arr = arr
+        self.conv1 = nn.Conv2d(3, arr[0], 3)
+        self.conv2 = nn.Conv2d(arr[0], arr[1], 3)
+        self.conv3 = nn.Conv2d(arr[1], arr[2], 3)
+        self.output_channel = arr[2]
+
+        if self.arr[-1] == 'pool':
+            self.pool = nn.MaxPool2d(2)
+        else:
+            self.pool = None
+
+        if self.pool:
+            self.output_size = 12
+        else:
+            self.output_size = 24
+
+        self.fc = nn.Linear(self.output_size * self.output_size * self.output_channel, 5)
 
     def forward(self, x):
         """
@@ -71,7 +100,21 @@ class DeepCNN(nn.Module):
 
         TODO: setup the flow of data (tensor)
         """
-        pass
+        x = self.conv1(x)
+        x = F.relu(x)
+        x = self.conv2(x)
+        x = F.relu(x)
+        x = self.conv3(x)
+        x = F.relu(x)
+
+        if self.pool:
+            x = self.pool(x)
+
+        size = x.shape[0]
+        x = x.view(size, -1)
+        x = self.fc(x)
+
+        return x
 
 
 # %%
@@ -89,6 +132,15 @@ TODO:
 """
 
 """Add random data augmentation to the transformer"""
-aug_transformer = transforms.Compose([])
+aug_transformer = transforms.Compose([
+    transforms.RandomAffine(5, shear=10),
+    transforms.RandomHorizontalFlip(p=0.5),
+    transforms.ToTensor(),
+    transforms.Normalize(
+        (0.5, 0.5, 0.5),
+        (0.5, 0.5, 0.5)
+    )
+])
+
 
 

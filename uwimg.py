@@ -182,6 +182,9 @@ convolve_image = lib.convolve_image
 convolve_image.argtypes = [IMAGE, IMAGE, c_int]
 convolve_image.restype = IMAGE
 
+apply_median_filter=lib.apply_median_filter
+apply_median_filter.argtypes=[IMAGE,c_int]
+apply_median_filter.restype=IMAGE
 
 ##### HOMEWORK 3
 
